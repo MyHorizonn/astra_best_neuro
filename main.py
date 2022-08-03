@@ -2,6 +2,11 @@
 import cv2 as cv
 import numpy as np
 import fitz
+import sys
+from signature_detect.loader import Loader
+from signature_detect.extractor import Extractor
+from signature_detect.cropper import Cropper
+from signature_detect.judger import Judger
 
 
 def text_size_check(page):
@@ -53,11 +58,46 @@ def text_size_check(page):
     else:
         print("OK")
 
+    return page
+
+
+def check_signature(page):
+    
+    # Маска ярким частям присвоено - 255, остальным - 0 
+    loader = Loader()
+    img = loader.get_masks(page)
+    
+    # Находит области, убирает слишком большие и слишком маленькие регионы
+    extractor = Extractor(amplfier=15)
+    labeled_mask = extractor.extract(img)
+    
+    # Находит контуры областей
+    cropper = Cropper(min_region_size=1000, border_ratio=0.1)
+    results = cropper.run(labeled_mask)
+    if results != {}:
+        signature = results[0]["cropped_mask"]
+        # Определяет является ли контур подписью
+        judger = Judger()
+        result = judger.judge(signature)
+        return signature
+    else:  
+        result = False
+    print(f'Signature check: {result}')
+    return result
+
 
 if __name__ == '__main__':
 
+
+
     # load pdf file
-    doc = fitz.open('./data/ЭПЦ-180701-СП.pdf')
+    doc = fitz.open('./data/ЭПЦ-180701-01-ПБ Изм.1.pdf')
+
+    page = doc.load_page(49)
+    pix = page.get_pixmap()
+    page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
+    cv.imwrite('test_sign3.png', page)
+
     
     for i in range(doc.page_count):
 
@@ -68,7 +108,12 @@ if __name__ == '__main__':
         page = doc.load_page(i)
         pix = page.get_pixmap()
         page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
-        text_size_check(page)
+
+        res = check_signature(page)
+        page = text_size_check(page)
+        if type(res) is not bool:
+            cv.imshow('sign', res)
+        cv.imshow('kek', page)
 
     #cv.waitKey(0)
     cv.destroyAllWindows()
