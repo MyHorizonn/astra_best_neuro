@@ -1,6 +1,6 @@
 ### Создание виртуального окружения
 ```
-python3 -m venv lenv
+python3 -m venv env
 source env/bin/activate
 pip install -r req.txt
 ```
