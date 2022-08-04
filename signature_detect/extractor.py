@@ -77,9 +77,11 @@ class Extractor:
                 total_pixels += region.area
                 nb_region += 1
         
+        '''
         cv.imshow('extractor', img)
         cv.waitKey(0)
         cv.destroyAllWindows()
+        '''
         
         if nb_region > 1:
             average = total_pixels / nb_region

@@ -53,6 +53,7 @@ class Judger:
 
             bincounts = np.bincount(mask.ravel())
             pixel_ratio = bincounts[0] / bincounts[255]
+            # print(f'pixel_ratio: {pixel_ratio}')
             if pixel_ratio < self.pixel_ratio[0] or pixel_ratio > self.pixel_ratio[1]:
                 return False
 

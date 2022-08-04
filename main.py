@@ -1,4 +1,5 @@
 #import tensorflow as tf
+from tabnanny import check
 import cv2 as cv
 import numpy as np
 import fitz
@@ -40,12 +41,12 @@ def text_size_check(page):
     main_child_idx = 0
     for i in range(len(contours)):
         if hierch[0][i][3] == max_cont_idx:
-            temp_idx = i
+            main_child_idx = i
 
     temp_kek = 0
     max_y = 0
     for i in range(len(contours)):
-        if hierch[0][i][3] == temp_idx:
+        if hierch[0][i][3] == main_child_idx:
             if max_y < cv.boundingRect(contours[i])[1]:
                 max_y = cv.boundingRect(contours[i])[1]
                 temp_kek = i
@@ -54,11 +55,9 @@ def text_size_check(page):
     cv.rectangle(page, (_x, _y), (_x + _w, _y + _h), (0, 255, 0), 2)
 
     if (_y + _h - y) / h <= .7:
-        print("Warning")
+        return False
     else:
-        print("OK")
-
-    return page
+        return True
 
 
 def check_signature(page):
@@ -68,37 +67,44 @@ def check_signature(page):
     img = loader.get_masks(page)
     
     # Находит области, убирает слишком большие и слишком маленькие регионы
-    extractor = Extractor(amplfier=15)
+    extractor = Extractor(outlier_weight=1, outlier_bias=50, amplfier=15, min_area_size=10)
     labeled_mask = extractor.extract(img)
     
     # Находит контуры областей
-    cropper = Cropper(min_region_size=1000, border_ratio=0.1)
+    cropper = Cropper(min_region_size=2000, border_ratio=0.1)
     results = cropper.run(labeled_mask)
     if results != {}:
-        signature = results[0]["cropped_mask"]
+
         # Определяет является ли контур подписью
-        judger = Judger()
-        result = judger.judge(signature)
-        return signature
-    else:  
-        result = False
-    print(f'Signature check: {result}')
-    return result
+        judger = Judger(size_ratio=[1, 4], pixel_ratio=[0.1, 0.7])
+        flag = False
+        for i in range(len(results)):
+            res = judger.judge(results[i]['cropped_mask'])
+            if res:
+                flag = True
+                break
+        return flag
+    else:
+        return False
 
 
-if __name__ == '__main__':
+def main(doc_path: str):
 
+    # open pdf file
+    doc = fitz.open(doc_path)
 
-
-    # load pdf file
-    doc = fitz.open('./data/ЭПЦ-180701-01-ПБ Изм.1.pdf')
-
-    page = doc.load_page(49)
+    '''
+    page = doc.load_page(1)
     pix = page.get_pixmap()
     page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
     cv.imwrite('test_sign3.png', page)
-
+    '''
     
+    result = {
+        'pages_with_text_size_failure': [] ,
+        'signature_check': None,
+    }
+
     for i in range(doc.page_count):
 
         if cv.waitKey(0) & 0xFF==ord('d'):
@@ -109,11 +115,21 @@ if __name__ == '__main__':
         pix = page.get_pixmap()
         page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
 
-        res = check_signature(page)
-        page = text_size_check(page)
-        if type(res) is not bool:
-            cv.imshow('sign', res)
-        cv.imshow('kek', page)
+        if i == 1:
+            result['signature_check'] = check_signature(page)
+        if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
+        
+    print(result)
+    
 
-    #cv.waitKey(0)
-    cv.destroyAllWindows()
+if __name__ == '__main__':
+
+    doc_path = None
+    for i in range(len(sys.argv)):
+        if sys.argv[i] == '--file':
+            doc_path = sys.argv[i + 1]
+    if doc_path is None:
+        print('Error: enter doc path\npython main.py --file myfile.pdf')
+    else:
+        main(doc_path)
+
