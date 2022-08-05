@@ -145,9 +145,7 @@ def main(doc_path: str):
 
     for i in range(doc.page_count):
 
-        if cv.waitKey(0) & 0xFF==ord('d'):
-            break
-        
+        print(f"Страница: {i}")
         # get page
         page = doc.load_page(i)
         pix = page.get_pixmap()
