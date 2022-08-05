@@ -10,6 +10,17 @@ from signature_detect.cropper import Cropper
 from signature_detect.judger import Judger
 import time
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 def text_size_check(page):
 
@@ -117,6 +128,8 @@ def main(doc_path: str):
     # open pdf file
     doc = fitz.open(doc_path)
 
+    print('Файл открыт')
+
     '''
     page = doc.load_page(1)
     pix = page.get_pixmap()
@@ -143,9 +156,12 @@ def main(doc_path: str):
         if i == 1:
             result['printing_check'] = check_printing(page)
             result['signature_check'] = check_signature(page)
+            print('Проверка на подпись и печать')
         if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
-        
-    print(result)
+    
+    print('Проверка закончена\n\n')
+
+    print(f'Результат:\n{result}\n\n')
     
 
 if __name__ == '__main__':
