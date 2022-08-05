@@ -8,6 +8,7 @@ from signature_detect.loader import Loader
 from signature_detect.extractor import Extractor
 from signature_detect.cropper import Cropper
 from signature_detect.judger import Judger
+import time
 
 
 def text_size_check(page):
@@ -100,11 +101,12 @@ def check_printing(page):
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         for (x, y, r) in circles:
+            '''         
             cv.circle(test, (x, y), r, (0, 255, 0), 4)
             cv.rectangle(test, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
             cv.imshow("asdasd", test)
             cv.waitKey(0)
-            cv.destroyAllWindows()
+            cv.destroyAllWindows()'''
             if r != 0:
                 # TODO: проверка окружности на печать
                 return True
@@ -148,6 +150,8 @@ def main(doc_path: str):
 
 if __name__ == '__main__':
 
+    start_time = time.time()
+
     doc_path = None
     for i in range(len(sys.argv)):
         if sys.argv[i] == '--file':
@@ -156,4 +160,5 @@ if __name__ == '__main__':
         print('Error: enter doc path\npython main.py --file myfile.pdf')
     else:
         main(doc_path)
-
+        print(f"--- {(time.time() - start_time):.3f}s seconds ---")
+    
