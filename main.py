@@ -87,6 +87,28 @@ def check_signature(page):
     else:
         return False
 
+def check_printing(page):
+
+    test = page.copy()
+    
+    # gray
+    gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
+
+    # поиск окружностей
+    circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, dp=2, minDist=page.shape[0], minRadius=20, maxRadius=60)
+    
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        for (x, y, r) in circles:
+            cv.circle(test, (x, y), r, (0, 255, 0), 4)
+            cv.rectangle(test, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+            cv.imshow("asdasd", test)
+            cv.waitKey(0)
+            cv.destroyAllWindows()
+            if r != 0:
+                # TODO: проверка окружности на печать
+                return True
+    return False
 
 def main(doc_path: str):
 
@@ -103,6 +125,7 @@ def main(doc_path: str):
     result = {
         'pages_with_text_size_failure': [] ,
         'signature_check': None,
+        'printing_check': None,
     }
 
     for i in range(doc.page_count):
@@ -116,6 +139,7 @@ def main(doc_path: str):
         page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
 
         if i == 1:
+            result['printing_check'] = check_printing(page)
             result['signature_check'] = check_signature(page)
         if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
         
