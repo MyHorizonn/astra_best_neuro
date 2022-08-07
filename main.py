@@ -10,17 +10,6 @@ from signature_detect.cropper import Cropper
 from signature_detect.judger import Judger
 import time
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 
 def text_size_check(page):
 
@@ -86,40 +75,53 @@ def check_signature(page):
     cropper = Cropper(min_region_size=2000, border_ratio=0.1)
     results = cropper.run(labeled_mask)
     if results != {}:
-
         # Определяет является ли контур подписью
         judger = Judger(size_ratio=[1, 4], pixel_ratio=[0.1, 0.7])
-        flag = False
         for i in range(len(results)):
-            res = judger.judge(results[i]['cropped_mask'])
-            if res:
-                flag = True
-                break
-        return flag
-    else:
-        return False
+            if judger.judge(results[i]['cropped_mask']):
+                return True
+    return False
 
-def check_printing(page):
+def check_printing(page, low_threshold=0.15, high_treshold=1.2):
 
+    # uncomment for testing
     test = page.copy()
     
     # gray
     gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
 
+    # blur
+    blur = cv.GaussianBlur(gray, (7, 7), 0)
+
     # поиск окружностей
-    circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, dp=2, minDist=page.shape[0], minRadius=20, maxRadius=60)
+    circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, dp=2, minDist=page.shape[0], minRadius=20, maxRadius=60)
+    
+    if circles is None: print('none circles')
     
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
+
         for (x, y, r) in circles:
-            '''         
-            cv.circle(test, (x, y), r, (0, 255, 0), 4)
-            cv.rectangle(test, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-            cv.imshow("asdasd", test)
+            empty = np.zeros((gray.shape[0], gray.shape[1]), dtype="uint8")
+            cv.circle(empty, (x, y), r, (255, 255, 255), -1)
+            crop = gray * (empty.astype(gray.dtype))
+            '''
+            cv.imshow('crop', crop)
             cv.waitKey(0)
-            cv.destroyAllWindows()'''
-            if r != 0:
-                # TODO: проверка окружности на печать
+            cv.destroyAllWindows()
+            '''
+            # площадь печати
+            square_of_print = len(empty[empty > 200])
+            # кол-во пикселей в печати
+            print_pixels = len(crop[crop > 50])
+            # кол-во пикселей в фоне в печати
+            print_bg_pixels = square_of_print - print_pixels
+            # Подсчет отношения
+            print_pixel_ratio = print_pixels / print_bg_pixels
+            print(f'pixels ratio: {print_pixel_ratio:.3f}')
+            if print_pixel_ratio > high_treshold or print_pixel_ratio < low_threshold: 
+                continue
+            else: 
                 return True
     return False
 
@@ -145,21 +147,32 @@ def main(doc_path: str):
 
     for i in range(doc.page_count):
 
-        print(f"Страница: {i}")
+        print(f"Страница: {i+1}")
+
         # get page
         page = doc.load_page(i)
         pix = page.get_pixmap()
         page = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
 
         if i == 1:
+            # Проверка на печать
             result['printing_check'] = check_printing(page)
+            
+            # Проверка на подпись
             result['signature_check'] = check_signature(page)
             print('Проверка на подпись и печать')
-        if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
+
+        # Альбомный лист проверку на заполненность не проходит
+        if page.shape[0] > page.shape[1]:
+            if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
     
     print('Проверка закончена\n\n')
 
-    print(f'Результат:\n{result}\n\n')
+    print(f'''Результат:\n
+            Страницы с объемом меньше 70%:  {result['pages_with_text_size_failure']}\n
+            Проверка подписи:               {result['signature_check']}\n
+            Проверка печати:                {result['printing_check']}\n
+            \n''')
     
 
 if __name__ == '__main__':
@@ -174,5 +187,5 @@ if __name__ == '__main__':
         print('Error: enter doc path\npython main.py --file myfile.pdf')
     else:
         main(doc_path)
-        print(f"--- {(time.time() - start_time):.3f}s seconds ---")
+        print(f"--- Executed for {(time.time() - start_time):.3f}s seconds ---")
     
