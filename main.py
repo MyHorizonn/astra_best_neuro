@@ -1,5 +1,3 @@
-#import tensorflow as tf
-from tabnanny import check
 import cv2 as cv
 import numpy as np
 import fitz
@@ -63,7 +61,7 @@ def text_size_check(page):
 
 def check_signature(page):
     
-    # Маска ярким частям присвоено - 255, остальным - 0 
+    # Маска, ярким частям присвоено - 255, остальным - 0 
     loader = Loader()
     img = loader.get_masks(page)
     
@@ -85,7 +83,7 @@ def check_signature(page):
 def check_printing(page, low_threshold=0.15, high_treshold=1.2):
 
     # uncomment for testing
-    test = page.copy()
+    #test = page.copy()
     
     # gray
     gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
