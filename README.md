@@ -1,15 +1,29 @@
-### Создание виртуального окружения
+## Создание виртуального окружения
+#### Linux/MacOS
 ```
 python3 -m venv env
 source env/bin/activate
 pip install -r req.txt
 ```
+#### Windows
+```
+python3 -m venv env
+env\Scripts\activate
+pip install -r req.txt
+```
 
-### Тестирование 
+## Тестирование 
 ```
 python main.py --file myfile.pdf
 ```
 Пример вывода:
 ```
-{'pages_with_text_size_failure': [1, 2, 3, 4, 5], 'signature_check': True}
+Результат:
+
+            Страницы с объемом меньше 70%:  [1, 2, 3, 4, 5, 6, 7]
+
+            Проверка подписи:               True
+
+            Проверка печати:                True
+
 ```
