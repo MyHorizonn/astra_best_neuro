@@ -92,7 +92,7 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
     blur = cv.GaussianBlur(gray, (7, 7), 0)
 
     # поиск окружностей
-    circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, dp=2, minDist=page.shape[0], minRadius=20, maxRadius=60)
+    circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT_ALT, dp=2, minDist=page.shape[0] // 20, minRadius=20, maxRadius=100, param1=300, param2=0.9)
     
     if circles is None: print('none circles')
     
@@ -103,11 +103,12 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
             empty = np.zeros((gray.shape[0], gray.shape[1]), dtype="uint8")
             cv.circle(empty, (x, y), r, (255, 255, 255), -1)
             crop = gray * (empty.astype(gray.dtype))
-            '''
+            
+            cv.imshow("empty", empty)
             cv.imshow('crop', crop)
             cv.waitKey(0)
             cv.destroyAllWindows()
-            '''
+            
             # площадь печати
             square_of_print = len(empty[empty > 200])
             # кол-во пикселей в печати
