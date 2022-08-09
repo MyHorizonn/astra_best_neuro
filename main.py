@@ -82,19 +82,17 @@ def check_signature(page):
 
 def check_printing(page, low_threshold=0.15, high_treshold=1.2):
 
-    # uncomment for testing
-    #test = page.copy()
-    
     # gray
     gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
 
+    # smooth
+    bilateral = cv.bilateralFilter(gray, 10, 50, 50)
+
     # blur
-    blur = cv.GaussianBlur(gray, (7, 7), 0)
+    blur = cv.GaussianBlur(bilateral, (7, 7), 0)
 
     # поиск окружностей
     circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT_ALT, dp=2, minDist=page.shape[0] // 20, minRadius=20, maxRadius=100, param1=300, param2=0.9)
-    
-    if circles is None: print('none circles')
     
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
@@ -104,11 +102,14 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
             cv.circle(empty, (x, y), r, (255, 255, 255), -1)
             crop = gray * (empty.astype(gray.dtype))
             
-            cv.imshow("empty", empty)
-            cv.imshow('crop', crop)
+            # uncomment for testing
+            '''
+            cv.imshow("Circle square", empty)
+            cv.imshow("Cropped image", crop)
             cv.waitKey(0)
             cv.destroyAllWindows()
-            
+            '''
+
             # площадь печати
             square_of_print = len(empty[empty > 200])
             # кол-во пикселей в печати
