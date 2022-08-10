@@ -37,6 +37,8 @@ def text_size_check(page):
     (x, y, w, h) = cv.boundingRect(contours[max_cont_idx])
     cv.rectangle(page, (x, y), (x + w, y + h), (0, 0, 250), 1)
 
+    # TODO: fix text size check
+
     main_child_idx = 0
     for i in range(len(contours)):
         if hierch[0][i][3] == max_cont_idx:
@@ -52,7 +54,11 @@ def text_size_check(page):
 
     (_x, _y, _w, _h) = cv.boundingRect(contours[temp_kek])
     cv.rectangle(page, (_x, _y), (_x + _w, _y + _h), (0, 255, 0), 2)
-
+    '''
+    cv.imshow("page", page)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+    '''
     if (_y + _h - y) / h <= .7:
         return False
     else:
@@ -61,7 +67,7 @@ def text_size_check(page):
 
 def check_signature(page):
     
-    # Маска, ярким частям присвоено - 255, остальным - 0 
+    # Маска, ярким частям присвоено - 255, остальным - 0
     loader = Loader()
     img = loader.get_masks(page)
     
@@ -76,6 +82,9 @@ def check_signature(page):
         # Определяет является ли контур подписью
         judger = Judger(size_ratio=[1, 4], pixel_ratio=[0.1, 0.7])
         for i in range(len(results)):
+            cv.imshow("sign", results[i]['cropped_mask'])
+            cv.waitKey(0)
+            cv.destroyAllWindows()
             if judger.judge(results[i]['cropped_mask']):
                 return True
     return False
@@ -103,12 +112,12 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
             crop = gray * (empty.astype(gray.dtype))
             
             # uncomment for testing
-            '''
+            
             cv.imshow("Circle square", empty)
             cv.imshow("Cropped image", crop)
             cv.waitKey(0)
             cv.destroyAllWindows()
-            '''
+            
 
             # площадь печати
             square_of_print = len(empty[empty > 200])
