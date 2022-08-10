@@ -128,7 +128,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# data
-/data
+# test data
+/test_data
+
+# media folder
+/media
 
 *.png

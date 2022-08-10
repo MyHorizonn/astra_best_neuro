@@ -2,14 +2,14 @@ import cv2 as cv
 import numpy as np
 import fitz
 import sys
-from signature_detect.loader import Loader
-from signature_detect.extractor import Extractor
-from signature_detect.cropper import Cropper
-from signature_detect.judger import Judger
+from cv.signature_detect.loader import Loader
+from cv.signature_detect.extractor import Extractor
+from cv.signature_detect.cropper import Cropper
+from cv.signature_detect.judger import Judger
 import time
 
 
-def text_size_check(page):
+def text_size_check(page, debug_mode: bool = True):
 
     # gray
     gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
@@ -44,28 +44,28 @@ def text_size_check(page):
         if hierch[0][i][3] == max_cont_idx:
             main_child_idx = i
 
-    temp_kek = 0
+    lowest_text = 0
     max_y = 0
     for i in range(len(contours)):
         if hierch[0][i][3] == main_child_idx:
             if max_y < cv.boundingRect(contours[i])[1]:
                 max_y = cv.boundingRect(contours[i])[1]
-                temp_kek = i
+                lowest_text = i
 
-    (_x, _y, _w, _h) = cv.boundingRect(contours[temp_kek])
+    (_x, _y, _w, _h) = cv.boundingRect(contours[lowest_text])
     cv.rectangle(page, (_x, _y), (_x + _w, _y + _h), (0, 255, 0), 2)
-    '''
-    cv.imshow("page", page)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
-    '''
-    if (_y + _h - y) / h <= .7:
-        return False
-    else:
+    if debug_mode:
+        cv.imshow("page", page)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        
+    if (_y - y + _h) / h <= .7:
         return True
+    else:
+        return False
 
 
-def check_signature(page):
+def check_signature(page, debug_mode : bool = True):
     
     # Маска, ярким частям присвоено - 255, остальным - 0
     loader = Loader()
@@ -82,14 +82,17 @@ def check_signature(page):
         # Определяет является ли контур подписью
         judger = Judger(size_ratio=[1, 4], pixel_ratio=[0.1, 0.7])
         for i in range(len(results)):
-            cv.imshow("sign", results[i]['cropped_mask'])
-            cv.waitKey(0)
-            cv.destroyAllWindows()
+            
+            if debug_mode:
+                cv.imshow("sign", results[i]['cropped_mask'])
+                cv.waitKey(0)
+                cv.destroyAllWindows()
+            
             if judger.judge(results[i]['cropped_mask']):
                 return True
     return False
 
-def check_printing(page, low_threshold=0.15, high_treshold=1.2):
+def check_printing(page, low_threshold=0.15, high_treshold=1.2, debug_mode : bool = True):
 
     # gray
     gray = cv.cvtColor(page, cv.COLOR_BGR2GRAY)
@@ -112,11 +115,11 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
             crop = gray * (empty.astype(gray.dtype))
             
             # uncomment for testing
-            
-            cv.imshow("Circle square", empty)
-            cv.imshow("Cropped image", crop)
-            cv.waitKey(0)
-            cv.destroyAllWindows()
+            if debug_mode:
+                cv.imshow("Circle square", empty)
+                cv.imshow("Cropped image", crop)
+                cv.waitKey(0)
+                cv.destroyAllWindows()
             
 
             # площадь печати
@@ -134,12 +137,13 @@ def check_printing(page, low_threshold=0.15, high_treshold=1.2):
                 return True
     return False
 
-def main(doc_path: str):
+def main(doc_path: str, debug_mode: bool = True):
+
 
     # open pdf file
     doc = fitz.open(doc_path)
 
-    print('Файл открыт')
+    if debug_mode: print('Файл открыт')
 
     '''
     page = doc.load_page(1)
@@ -156,7 +160,7 @@ def main(doc_path: str):
 
     for i in range(doc.page_count):
 
-        print(f"Страница: {i+1}")
+        if debug_mode: print(f"Страница: {i+1}")
 
         # get page
         page = doc.load_page(i)
@@ -165,36 +169,27 @@ def main(doc_path: str):
 
         if i == 1:
             # Проверка на печать
-            result['printing_check'] = check_printing(page)
+            result['printing_check'] = check_printing(page, debug_mode=debug_mode)
             
             # Проверка на подпись
-            result['signature_check'] = check_signature(page)
-            print('Проверка на подпись и печать')
+            result['signature_check'] = check_signature(page, debug_mode=debug_mode)
+            if debug_mode: print('Проверка на подпись и печать')
 
         # Альбомный лист проверку на заполненность не проходит
         if page.shape[0] > page.shape[1]:
-            if ~text_size_check(page): result['pages_with_text_size_failure'].append(i+1)
+            if text_size_check(page, debug_mode):
+                result['pages_with_text_size_failure'].append(i+1)
     
-    print('Проверка закончена\n\n')
+    if debug_mode: print('Проверка закончена\n\n')
 
-    print(f'''Результат:\n
+    if debug_mode: print(f'''Результат:\n
             Страницы с объемом меньше 70%:  {result['pages_with_text_size_failure']}\n
             Проверка подписи:               {result['signature_check']}\n
             Проверка печати:                {result['printing_check']}\n
             \n''')
+
+    return result
     
 
 if __name__ == '__main__':
-
-    start_time = time.time()
-
-    doc_path = None
-    for i in range(len(sys.argv)):
-        if sys.argv[i] == '--file':
-            doc_path = sys.argv[i + 1]
-    if doc_path is None:
-        print('Error: enter doc path\npython main.py --file myfile.pdf')
-    else:
-        main(doc_path)
-        print(f"--- Executed for {(time.time() - start_time):.3f}s seconds ---")
-    
+    print('run_cv')

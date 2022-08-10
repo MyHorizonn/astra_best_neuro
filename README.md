@@ -14,7 +14,7 @@ pip install -r req.txt
 
 ## Тестирование 
 ```
-python main.py --file myfile.pdf
+python test_cv.py --file myfile.pdf
 ```
 Пример вывода:
 ```
