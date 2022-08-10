@@ -1,4 +1,4 @@
-## Создание виртуального окружения
+## Создание и активация виртуального окружения
 #### Linux/MacOS
 ```
 python3 -m venv env
@@ -11,8 +11,13 @@ python3 -m venv env
 env\Scripts\activate
 pip install -r req.txt
 ```
+## Запуск сервера
+```
+python run.py
+```
 
-## Тестирование 
+## Тестирование обработки файла
+Для вывода картинок добавить --debug
 ```
 python test_cv.py --file myfile.pdf
 ```
